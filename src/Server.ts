@@ -1,7 +1,9 @@
 import express from "express";
-import {AddressInfo} from "net";
 import formData from "express-form-data";
-import Config from "../config";
+
+import routers from "../src/routers";
+import {AppConfig} from "../config/AppConfig";
+import Logger from "../src/modules/Logger"
 
 const app = express();
 
@@ -17,8 +19,18 @@ app.use(formData.parse({
 // 미들웨어와 함께 사용되며, 다중 파일 업로드를 지원하기 위해 사용됩니다. 이 미들웨어는 파싱된 파일들을 하나의 객체로 병합하여 req.body에 저장합니다.
 app.use(formData.union());
 
+app.use("/", routers);
+
 app.get('/', (req, res) => res.status(200).end());
 app.head('/', (req, res) => res.status(200).end());
 
 
+(async () => {
+    await AppConfig.loadAppConfig();
+
+    const appConfigInstance = AppConfig.getInstance();
+    // 환경 설정 추출
+    Logger.info(JSON.stringify(appConfigInstance) + " appConfigInstance");
+
+})();
 
