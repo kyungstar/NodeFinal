@@ -1,36 +1,36 @@
+// Server.ts
+
 import express from "express";
 import formData from "express-form-data";
-
 import routers from "../src/routers";
-import {AppConfig} from "../config/AppConfig";
+import { AppConfig } from "../config/AppConfig";
 import Logger from "../src/modules/Logger"
 
 const app = express();
 
-// JSON 파싱 미들웨어를 사용하고, 요청 본문의 크기를 제한합니다.
-app.use(express.json({limit: '50mb'}));
-
-//파일 업로드를 위해 요청 본문을 파싱하는 미들웨어를 등록하고, 설정을 지정합니다.
-app.use(formData.parse({
-    autoClean: true, // 요청이 완료된 후 임시 파일을 자동으로 삭제
-    maxFilesSize: 1024 * 1024 * 1024, // 전송되는 파일의 최대 크기를 설정
-}));
-
-// 미들웨어와 함께 사용되며, 다중 파일 업로드를 지원하기 위해 사용됩니다. 이 미들웨어는 파싱된 파일들을 하나의 객체로 병합하여 req.body에 저장합니다.
-app.use(formData.union());
-
-app.use("/", routers);
-
-app.get('/', (req, res) => res.status(200).end());
-app.head('/', (req, res) => res.status(200).end());
-
-
+// 서버 실행 전에 AppConfig 설정 로드
 (async () => {
-    await AppConfig.loadAppConfig();
-
-    const appConfigInstance = AppConfig.getInstance();
-    // 환경 설정 추출
-    Logger.info(JSON.stringify(appConfigInstance) + " appConfigInstance");
-
+    try {
+        await AppConfig.loadAppConfig();
+        startServer(); // 설정이 로드된 후 서버 시작
+    } catch (error) {
+        console.error(`Failed to load AppConfig: ${error.message}`);
+    }
 })();
 
+function startServer() {
+    // JSON 파싱 미들웨어를 사용하고, 요청 본문의 크기를 제한합니다.
+    app.use(express.json({limit: '50mb'}));
+
+    // 파일 업로드를 위해 요청 본문을 파싱하는 미들웨어를 등록하고, 설정을 지정합니다.
+    app.use(formData.parse({
+        autoClean: true, // 요청이 완료된 후 임시 파일을 자동으로 삭제
+        maxFilesSize: 1024 * 1024 * 1024, // 전송되는 파일의 최대 크기를 설정
+    }));
+
+    // 미들웨어와 함께 사용되며, 다중 파일 업로드를 지원하기 위해 사용됩니다. 이 미들웨어는 파싱된 파일들을 하나의 객체로 병합하여 req.body에 저장합니다.
+    app.use(formData.union());
+    app.get('/', (req, res) => res.status(200).end());
+    app.head('/', (req, res) => res.status(200).end());
+    app.use("/", routers);
+}
